@@ -1,6 +1,6 @@
 package Array::Virtual;
 
-# documentation is at the bottom
+# POD documentation is at the bottom
 
 require 5.005;
 use strict;
@@ -11,7 +11,7 @@ use Fcntl;
 
 use vars qw($VERSION @ISA);
 @ISA = qw(Tie::Array);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 # All methods in this class are called automatically by the tied array
 # magician.
@@ -22,6 +22,8 @@ $VERSION = '0.03';
 #   Sept 2001: changed tying sequence so file existence is not used to
 #              determine whether the array is already no the disk
 #              this makes the module less dependent on the underlying DBM
+#   Apr  2002: added support for negative indices
+#              corrected problems with indices outside original range
 
 sub TIEARRAY {
   my $class = shift;
@@ -50,8 +52,14 @@ sub FETCH {
   my $self = shift;
   my $index = shift;
 
-  $index += $$self{FRONT};
-  if ($index > $$self{BACK}) {
+  if ($index < 0) {
+    $index = $$self{BACK} + 1 + $index;
+  }
+  else {
+    $index += $$self{FRONT};
+  }
+
+  if ($index > $$self{BACK} or $index < $$self{FRONT}) {
     return undef;
   } else {
     return $$self{$index};
@@ -65,21 +73,34 @@ sub FETCHSIZE {
 }
 
 sub STORE {
-  my $self = shift;
+  my $self  = shift;
   my $index = shift;
   my $value = shift;
 
-  $index += $$self{FRONT};
+  if ($index < 0) {  # What happens if this goes off the front of the array?
+                     # I want it to be the analog of running off the back.
+    $index = $$self{BACK} + 1 + $index;
+  }
+  else {
+    $index += $$self{FRONT};
+  }
 
   if ($index > $$self{BACK}) {
-    $$self{COUNT}++;
-    $$self{BACK}++;
+    $$self{BACK}  = $index;
+    $$self{COUNT} = $$self{BACK} - $$self{FRONT} + 1;
+  }
+  # Perl 5.6 actually calls an error in this case (it checks with FETCHSIZE)
+  # It says:
+  #   Modification of non-creatable array value attempted, subscript nn...
+  elsif ($index < $$self{FRONT}) {
+    $$self{FRONT} = $index;
+    $$self{COUNT} = $$self{BACK} - $$self{FRONT} + 1;
   }
   $$self{$index} = $value;
 }
 
 sub STORESIZE {
-  my $self = shift;
+  my $self  = shift;
   my $count = shift;
 
   $$self{COUNT} = $count;
@@ -93,10 +114,15 @@ sub DESTROY {
 }
 
 sub EXISTS {
-  my $self = shift;
+  my $self  = shift;
   my $index = shift;
 
-  $index += $$self{FRONT};
+  if ($index < 0) {
+    $index = $$self{BACK} + 1 + $index;
+  }
+  else {
+    $index += $$self{FRONT};
+  }
   return 0 if ($index > $$self{BACK} or $index < $$self{FRONT});
   return defined $$self{$index};
 }
@@ -196,11 +222,11 @@ __END__
 
 =head1 NAME
 
-Array::Virtual - A perl extension providing disk based arrays implemented via tied hashes
+Array::Virtual - Provides disk based arrays implemented via tied hashes
 
 =head1 VERSION
 
-This documentation covers version 0.03 of Array::Virtual released Sept, 2001.
+This documentation covers version 0.04 of Array::Virtual released May, 2002.
 
 =head1 SYNOPSIS
 
@@ -250,7 +276,7 @@ This package inherits from Tie::Array from the standard distribution.
 
 It uses the standard pragma strict.
 
-In addition it uses Fcntl out of laziness, and SDBM_File out of necessity.
+In addition, it uses Fcntl out of laziness, and SDBM_File out of necessity.
 Both of these are from the standard distribution.
 
 =head1 BUGS
@@ -265,6 +291,19 @@ attention to the deprecated $[ variable which allows arrays to begin at
 non-zero indices.  If you use this variable, Array::Virtual will likely
 become confused.
 
+=head1 CORRECTED BUGS
+
+Negative indices were not handled at all.  All attempts to say things like
+$array[-1] yielded unpredictable results.  Corrected in version 0.04.
+
+Storing in slots outside the current range failed in most cases.  For example,
+if an array was empty the following commands didn't work as expected:
+ push @array, 1;
+ push @array, 2;
+ $array[7] = 3;
+The results of the last statement were unexpected and unpredictable.
+Corrected in version 0.04.
+
 =head1 EXPORT
 
 This module exports nothing.  Everything in it is called transparently by
@@ -272,11 +311,11 @@ the tie magician.
 
 =head1 AUTHOR
 
-Phil Crow crow@qns.com
+Phil Crow philcrow2000@yahoo.com
 
 =head1 COPYRIGHT
 
-Copyright (c) 2001  Philip Crow.  All rights reserved.  This program
+Copyright (c) 2001-2002  Philip Crow.  All rights reserved.  This program
 is free and may be redributed under the same terms as Perl itself.
 
 =cut

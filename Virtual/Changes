@@ -12,3 +12,7 @@ Revision history for Perl extension Array::Virtual.
         - converted from NDBM_File to SDBM_File since the later ships with perl
         - removed dependence on file names from TIEARRAY function
         - added a README file
+
+0.04  Tue  Apr 23 12:06 2002
+        - corrected FETCH, STORE, and EXISTS to handle negative array indices
+	  and indices outside the original bounds

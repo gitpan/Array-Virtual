@@ -1,6 +1,6 @@
 Array::Virtual - provides disk based arrays via tied hashes
 
-    Copyright (c) 2001 Phil Crow <crow@qns.com>.
+    Copyright (c) 2001 - 2002 Phil Crow <philcrow2000@yahoo.com>.
     All rights reserved.  This program is free software; you can
     redistribute it and/or modify it under the same terms as Perl itself.
 
@@ -9,7 +9,7 @@ DESCRIPTION
     on the disk.  This allows the same data to be used each time a program
     runs without having to manually restore the data.  Note that references
     are not allowed, because they will not reincarnate correctly between
-    program invocations.
+    program invocations.  The rules are similar to hash keys.
 
 INSTALLATION
     perl Makefile.PL
@@ -20,5 +20,8 @@ INSTALLATION
 REVISION HISTORY
     0.01    Summer 2001 - Initial release.
     0.02    August 2001 - Corrected an offset error in EXISTS function
-    0.03    Sept. 2001  - Converted to SDBM which is more widely available
+    0.03    Sept.  2001 - Converted to SDBM which is more widely available
                           Elminated dependence on NDBM file naming conventions
+    0.04    April  2002 - Corrected problems with indices outside the current
+                          range
+			  Added support for negative indices
