@@ -1,0 +1,9 @@
+Revision history for Perl extension Array::Virtual.
+
+0.01  Tue Oct 10 14:55:08 2000
+	- original version; created by h2xs 1.20 with options
+		-X Array::Virtual
+
+0.02  Mon  Aug 20 08:24 2001
+        - corrected EXISTS function to offset properly
+        - corrected POD formatting error in copyright section
