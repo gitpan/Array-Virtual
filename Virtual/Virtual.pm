@@ -6,31 +6,33 @@ require 5.005;
 use strict;
 
 use Tie::Array;
-use NDBM_File;
+use SDBM_File;
 use Fcntl;
 
 use vars qw($VERSION @ISA);
 @ISA = qw(Tie::Array);
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 # All methods in this class are called automatically by the tied array
 # magician.
 # Edit history:
 #   fall 2000: created
 #   July 2001: corrected EXISTS so it offsets properly
+#   Sept 2001: switched to SDBM_File since that is universal to Perl
+#   Sept 2001: changed tying sequence so file existence is not used to
+#              determine whether the array is already no the disk
+#              this makes the module less dependent on the underlying DBM
 
 sub TIEARRAY {
   my $class = shift;
   my $name  = shift || "default";
-  my $perms = shift || 0644;
-  my $new = 1;  # we'll assume it's the first time
+  my $perms = shift || 0666;
+  my $new = 0;  # we'll assume it's not the first time
   my %indices;
 
-  if (-f "$name.array.db" or -f "$name.array.pag") {
-    $new = 0;
-    tie %indices, "NDBM_File", "$name.array", O_RDWR, $perms;
-  } else {
-    tie %indices, "NDBM_File", "$name.array", O_WRONLY|O_CREAT, $perms;
+  unless (tie %indices, "SDBM_File", "$name.array", O_RDWR, $perms) {
+    tie %indices, "SDBM_File", "$name.array", O_RDWR|O_CREAT, $perms;
+    $new = 1;
   }
 
   if ($new) {
@@ -198,7 +200,7 @@ Array::Virtual - A perl extension providing disk based arrays implemented via ti
 
 =head1 VERSION
 
-This documentation covers version 0.01 of Array::Virtual released July, 2001.
+This documentation covers version 0.03 of Array::Virtual released Sept, 2001.
 
 =head1 SYNOPSIS
 
@@ -217,9 +219,9 @@ This documentation covers version 0.01 of Array::Virtual released July, 2001.
 =head1 DESCRIPTION
 
 This module allows a user to tie an array to a disk file.  The actual
-storage scheme is a hash tied via NDBM_File.
+storage scheme is a hash tied via SDBM_File.
 
-The module optimizes push, pop, shift and unshift for speed.  For SPLICE,
+The module optimizes push, pop, shift, and unshift for speed.  For SPLICE,
 it uses the method inherited from Tie::Array.  Splicing requires
 moving elements around.  Since there is really no short cut for that, there
 is not a real way to optimize this routine, thus it is borrowed.  Genuine
@@ -228,20 +230,19 @@ inherited croak from Tie::Array.
 
 Once you issue a line like
    tie @myarray, "Virtual", "diskname", 0664;
-you may use @myarray just as you would any other array.
-The array will be stored in a file called diskname.array.db
-or a pair of files diskname.array.dir and diskname.array.pag,
-depending on the verion of NDBM_File you are using.  Any path
-is preserved through the call, but .array.... is always appended.  (This
-module puts on the array extension, NDBM_File puts on the other extension(s).)
+you may use @myarray just as you would any other array.  The array will be
+stored in a pair of files called diskname.array.dir and diskname.array.pag.
+Any path is preserved through the call, but .array.... is always appended.
+(This module puts on the array extension, SDBM_File puts on the other
+extensions.)
 
-If the disk file(s) for the array already exists, it is opened and its
+If the disk files for the array already exists, the array is opened and its
 contents are the same as the last time the disk array was used.  If you
-want to purge the disk array, simply unlink its file(s) either inside
+want to purge the disk array, simply unlink its files either inside
 or outside of perl.  Say something like C<unlink \<diskname.array.*\>>.
 
-If the file(s) cannot be found, it(they) is(are) created with the
-given permissions if supplied (or with 0644 by default).
+If the files cannot be found, they are created with the given permissions
+if supplied (or with 0666 modified by your umask by default).
 
 =head1 DEPENDENCIES
 
@@ -249,21 +250,20 @@ This package inherits from Tie::Array from the standard distribution.
 
 It uses the standard pragma strict.
 
-In addition it uses Fcntl out of laziness, and NDBM_File out of necessity.
+In addition it uses Fcntl out of laziness, and SDBM_File out of necessity.
 Both of these are from the standard distribution.
 
 =head1 BUGS
 
 Normally when you down size an array, you permanently loose the elements
 which are outside the new range.  Later enlarging is not supposed
-to recover the lost elements.  This Array::Virtual restores them as if they
+to recover the lost elements.  Array::Virtual restores them as if they
 were never lost.  You might consider this a feature.  It does save time.
-
-=head1 NOTE WELL
 
 This module never uses arrays in its implementation.  It does not pay any
 attention to the deprecated $[ variable which allows arrays to begin at
-non-zero indices.
+non-zero indices.  If you use this variable, Array::Virtual will likely
+become confused.
 
 =head1 EXPORT
 
@@ -277,7 +277,7 @@ Phil Crow crow@qns.com
 =head1 COPYRIGHT
 
 Copyright (c) 2001  Philip Crow.  All rights reserved.  This program
-is free and may be redributed in the same manner as Perl itself.
+is free and may be redributed under the same terms as Perl itself.
 
 =cut
 

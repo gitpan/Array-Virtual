@@ -3,3 +3,5 @@ MANIFEST
 Makefile.PL
 Virtual.pm
 test.pl
+README
+sample

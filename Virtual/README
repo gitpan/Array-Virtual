@@ -1,0 +1,24 @@
+Array::Virtual - provides disk based arrays via tied hashes
+
+    Copyright (c) 2001 Phil Crow <crow@qns.com>.
+    All rights reserved.  This program is free software; you can
+    redistribute it and/or modify it under the same terms as Perl itself.
+
+DESCRIPTION
+    This module allows the caller to tie an array which will then be stored
+    on the disk.  This allows the same data to be used each time a program
+    runs without having to manually restore the data.  Note that references
+    are not allowed, because they will not reincarnate correctly between
+    program invocations.
+
+INSTALLATION
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+REVISION HISTORY
+    0.01    Summer 2001 - Initial release.
+    0.02    August 2001 - Corrected an offset error in EXISTS function
+    0.03    Sept. 2001  - Converted to SDBM which is more widely available
+                          Elminated dependence on NDBM file naming conventions

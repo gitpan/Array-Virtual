@@ -7,3 +7,8 @@ Revision history for Perl extension Array::Virtual.
 0.02  Mon  Aug 20 08:24 2001
         - corrected EXISTS function to offset properly
         - corrected POD formatting error in copyright section
+
+0.03  Wed  Sep 12 09:18 2001
+        - converted from NDBM_File to SDBM_File since the later ships with perl
+        - removed dependence on file names from TIEARRAY function
+        - added a README file
